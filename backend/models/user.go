@@ -19,6 +19,21 @@ func UpdateTodoModel() {
 }
 
 // HashPassword 加密用户密码
+/**
+参数 (Parameters)
+接收者参数 (Receiver):
+u *User: 指向 User 结构体的指针，表示这是 User 结构体的方法
+使用指针接收者是因为需要修改 User 实例的 Password 字段
+输入参数:
+password string: 用户的原始明文密码
+类型: 字符串 (string)
+返回值 (Return)
+error:
+如果密码加密过程中出现错误，返回相应的错误信息
+如果加密成功，返回 nil
+类型: error 接口
+函数内部变量
+**/
 func (u *User) HashPassword(password string) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
