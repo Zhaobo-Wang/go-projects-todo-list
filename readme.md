@@ -4,10 +4,12 @@ A full-stack Todo application built with Go (Gin + GORM) backend and Vue.js + Ty
 
 ## Features
 
+- User registration and authentication with JWT
 - Create, read, update, and delete todo items
 - RESTful API with Go/Gin
 - MySQL database with GORM ORM
 - Vue.js frontend with TypeScript
+- Secure user authentication and authorization
 
 ## Getting Started
 
@@ -42,9 +44,22 @@ cd go-projects/os-go
    go mod tidy
    ```
 
-3. Create a `.env` file cope `.env.sample`
+3. Create a `.env` file by copying `.env.sample`:
+   ```bash
+   cp .env.sample .env
+   ```
 
-4. Create the MySQL database:
+4. Update the `.env` file with your MySQL credentials and JWT secret:
+   ```
+   DB_USER=root
+   DB_PASSWORD=your_password
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_NAME=todo_app
+   JWT_SECRET=your_secret_key
+   ```
+
+5. Create the MySQL database:
    ```bash
    mysql -u root -p
    ```
@@ -55,7 +70,7 @@ cd go-projects/os-go
    EXIT;
    ```
 
-5. Run the backend server:
+6. Run the backend server:
    ```bash
    go run main.go
    ```
@@ -64,17 +79,47 @@ cd go-projects/os-go
 
 ## API Endpoints
 
-- `GET /api/v1/todos` - Get all todos
+### Authentication
+- `POST /api/v1/register` - Register a new user
+- `POST /api/v1/login` - Login and get JWT token
+
+### User
+- `GET /api/v1/user` - Get current user information
+
+### Todo Items
+- `GET /api/v1/todos` - Get all todos for the authenticated user
 - `POST /api/v1/todos` - Create a new todo
 - `GET /api/v1/todos/:id` - Get a single todo
 - `PUT /api/v1/todos/:id` - Update a todo
 - `DELETE /api/v1/todos/:id` - Delete a todo
+
+## Database Schema
+
+### Users Table
+- `id` - Primary key
+- `username` - Unique username
+- `email` - Unique email address
+- `password` - Hashed password
+- `created_at` - Timestamp
+- `updated_at` - Timestamp
+- `deleted_at` - Soft delete timestamp
+
+### Todos Table
+- `id` - Primary key
+- `title` - Todo title
+- `description` - Todo description
+- `completed` - Boolean status
+- `user_id` - Foreign key to users table
+- `created_at` - Timestamp
+- `updated_at` - Timestamp
+- `deleted_at` - Soft delete timestamp
 
 ## Built With
 
 - [Go](https://golang.org/) - Backend language
 - [Gin](https://github.com/gin-gonic/gin) - Web framework
 - [GORM](https://gorm.io/) - ORM library
+- [JWT](https://github.com/golang-jwt/jwt) - JSON Web Token authentication
 - [Vue.js](https://vuejs.org/) - Frontend framework
 - [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
 - [MySQL](https://www.mysql.com/) - Database
@@ -87,4 +132,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - [Gin Documentation](https://gin-gonic.com/docs/)
 - [GORM Documentation](https://gorm.io/docs/)
+- [JWT Documentation](https://github.com/golang-jwt/jwt)
 - [Vue.js Documentation](https://vuejs.org/guide/introduction.html)
