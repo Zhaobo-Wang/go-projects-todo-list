@@ -41,6 +41,13 @@ func ConnectDatabase() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	// Migrate the schema
-	DB.AutoMigrate(&models.Todo{})
+	DB.Exec("CREATE DATABASE IF NOT EXISTS " + dbname)
+	
+	if err := DB.AutoMigrate(&models.User{}); err != nil {
+		log.Printf("Error migrating User model: %v", err)
+	}
+	
+	if err := DB.AutoMigrate(&models.Todo{}); err != nil {
+		log.Printf("Error migrating Todo model: %v", err)
+	}
 }

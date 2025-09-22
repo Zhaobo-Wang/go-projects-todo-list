@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/Zhaobo-Wang/go-projects/database"
+	"github.com/Zhaobo-Wang/go-projects/middleware"
 	"github.com/Zhaobo-Wang/go-projects/models"
 )
 
@@ -20,8 +21,10 @@ gin.H{...} 创建一个 map，键为 "data"，值为 todos 切片
 将这个 map 转换为 JSON 并发送给客户端
 **/
 func GetTodos(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+
 	var todos []models.Todo
-	database.DB.Find(&todos)
+	database.DB.Where("user_id = ?", userID).Find(&todos)
 	
 	c.JSON(http.StatusOK, gin.H{"data": todos})
 }
@@ -37,6 +40,8 @@ database.DB.Create(&todo)：将新 Todo 保存到数据库
 c.JSON(http.StatusCreated, gin.H{"data": todo})：返回 201 状态码和新创建的 Todo
 **/
 func CreateTodo(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	
 	var input models.Todo
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -47,6 +52,7 @@ func CreateTodo(c *gin.Context) {
 		Title:       input.Title,
 		Description: input.Description,
 		Completed:   input.Completed,
+		UserID:      userID,
 	}
 	
 	database.DB.Create(&todo)
@@ -65,10 +71,12 @@ First(&todo)：查找第一个匹配的记录
 否则，返回找到的 Todo 对象
 **/
 func GetTodo(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	
 	var todo models.Todo
 	
-	if err := database.DB.Where("id = ?", c.Param("id")).First(&todo).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found"})
+	if err := database.DB.Where("id = ? AND user_id = ?", c.Param("id"), userID).First(&todo).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or not authorized"})
 		return
 	}
 	
@@ -85,10 +93,12 @@ Updates(...) 使用新数据更新记录
 返回更新后的 Todo
 **/
 func UpdateTodo(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	
 	var todo models.Todo
 	
-	if err := database.DB.Where("id = ?", c.Param("id")).First(&todo).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found"})
+	if err := database.DB.Where("id = ? AND user_id = ?", c.Param("id"), userID).First(&todo).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or not authorized"})
 		return
 	}
 	
@@ -114,10 +124,12 @@ database.DB.Delete(&todo)：从数据库中删除这个 Todo
 返回成功消息
 **/
 func DeleteTodo(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	
 	var todo models.Todo
 	
-	if err := database.DB.Where("id = ?", c.Param("id")).First(&todo).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found"})
+	if err := database.DB.Where("id = ? AND user_id = ?", c.Param("id"), userID).First(&todo).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or not authorized"})
 		return
 	}
 	

@@ -4,27 +4,42 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/Zhaobo-Wang/go-projects/controllers"
+	"github.com/Zhaobo-Wang/go-projects/middleware"
 )
 
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
 	
-	// CORS configuration
+	// 配置 CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
 	
-	// Routes
-	v1 := r.Group("/api/v1")
+	// 公共路由 - 不需要认证
+	public := r.Group("/api/v1")
 	{
-		v1.GET("/todos", controllers.GetTodos)
-		v1.POST("/todos", controllers.CreateTodo)
-		v1.GET("/todos/:id", controllers.GetTodo)
-		v1.PUT("/todos/:id", controllers.UpdateTodo)
-		v1.DELETE("/todos/:id", controllers.DeleteTodo)
+		// 认证路由
+		public.POST("/register", controllers.Register)
+		public.POST("/login", controllers.Login)
+	}
+	
+	// 受保护路由 - 需要认证
+	protected := r.Group("/api/v1")
+	protected.Use(middleware.AuthMiddleware())
+	{
+		// Todo 路由
+		protected.GET("/todos", controllers.GetTodos)
+		protected.POST("/todos", controllers.CreateTodo)
+		protected.GET("/todos/:id", controllers.GetTodo)
+		protected.PUT("/todos/:id", controllers.UpdateTodo)
+		protected.DELETE("/todos/:id", controllers.DeleteTodo)
+		
+		// 用户路由
+		protected.GET("/user-profile", controllers.GetUser) 
 	}
 	
 	return r
