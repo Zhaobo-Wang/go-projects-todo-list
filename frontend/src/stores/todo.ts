@@ -121,7 +121,7 @@ export const useTodoStore = defineStore('todo', {
             const todo = this.todos.find(t => t.id === id);
             if (!todo) return;
 
-            return this.updateTodo(id, { completed: !todo.completed });
+            return this.updateTodo(id, { title: todo.title, description: todo.description, completed: !todo.completed });
         }
     },
 });
