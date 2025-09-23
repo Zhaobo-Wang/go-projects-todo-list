@@ -48,12 +48,12 @@ export const useTodoStore = defineStore('todo', {
             this.loading = true;
             this.error = null;
             try {
+                console.log('createTodo', title, description);
                 const response = await todoApi.create({ title, description });
                 console.log(response);
                 const newTodo = response.data.data;
                 if (!Array.isArray(this.todos)) {
                     console.log('todos is not an array, initializing:', this.todos);
-                    // 重新初始化 todos 为空数组
                     this.todos = [];
                 }
                 this.todos.push(newTodo);
@@ -72,15 +72,23 @@ export const useTodoStore = defineStore('todo', {
             this.error = null;
             try {
                 const response = await todoApi.update(id, updates);
-                const updatedTodo = response.data;
+                console.log('API 响应:', response);
 
-                // 更新本地状态
-                const index = this.todos.findIndex(todo => todo.id === id);
-                if (index !== -1) {
-                    this.todos[index] = updatedTodo;
+                // 修改这里：从 response.data.data 获取更新后的 Todo
+                const updatedTodo = response.data.data;
+
+                console.log('更新后的 Todo:', updatedTodo);
+
+                if (updatedTodo && updatedTodo.id) {
+                    const index = this.todos.findIndex(todo => todo.id === id);
+                    if (index !== -1) {
+                        this.todos[index] = { ...this.todos[index], ...updatedTodo };
+                    }
+
+                    return updatedTodo;
+                } else {
+                    throw new Error('更新后的 Todo 数据无效');
                 }
-
-                return updatedTodo;
             } catch (error: any) {
                 this.error = error.message;
                 console.error(`Failed to update todo ${id}:`, error);
@@ -94,8 +102,8 @@ export const useTodoStore = defineStore('todo', {
             this.loading = true;
             this.error = null;
             try {
-                await todoApi.delete(id);
-
+                const response = await todoApi.delete(id);
+                console.log(response.data);
                 // 从本地状态中移除
                 this.todos = this.todos.filter(todo => todo.id !== id);
 

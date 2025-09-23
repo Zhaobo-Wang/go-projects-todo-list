@@ -213,17 +213,38 @@ const cancelEdit = () => {
 };
 
 const updateTodo = async () => {
-  if (!editingTodo.value) return;
+  console.log('准备调用 store.updateTodo');
+  if (!editingTodo.value) {
+    console.log('editingTodo 为空，退出函数');
+    return;
+  }
+  
+  console.log('editingTodo 的值:', editingTodo.value); 
   
   try {
-    await todoStore.updateTodo(editingTodo.value.id, {
-      title: editingTodo.value.title,
-      description: editingTodo.value.description,
-      completed: editingTodo.value.completed,
-    });
+    console.log('调用前检查 todoStore:', todoStore); 
+    
+    const updatedTodo = await todoStore.updateTodo(
+      editingTodo.value.id,
+      {
+        title: editingTodo.value.title,
+        description: editingTodo.value.description,
+        completed: editingTodo.value.completed,
+      }
+    );
+    
+    console.log('更新成功，返回值:', updatedTodo);
     editingTodo.value = null;
+    return updatedTodo;
   } catch (error) {
-    console.error('Failed to update todo:', error);
+    console.log('Failed to update todo:', error);
+    // 打印更详细的错误信息
+    if (error instanceof Error) {
+      console.error('错误详情:', error.message);
+      console.error('错误堆栈:', error.stack);
+    } else {
+      console.error('未知错误类型:', error);
+    }
   }
 };
 
