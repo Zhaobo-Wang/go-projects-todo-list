@@ -67,7 +67,7 @@ export const todoApi = {
         return apiClient.post('/todos', todo);
     },
     update: (id: number, todo: { title?: string; description?: string; completed?: boolean }) => {
-        return apiClient.put(`/todos/${id}`, todo);
+        return apiClient.patch(`/todos/${id}`, todo);
     },
     delete: (id: number) => {
         return apiClient.delete(`/todos/${id}`);

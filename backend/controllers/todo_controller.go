@@ -1,12 +1,13 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Zhaobo-Wang/go-projects/database"
 	"github.com/Zhaobo-Wang/go-projects/middleware"
 	"github.com/Zhaobo-Wang/go-projects/models"
+	"github.com/gin-gonic/gin"
 )
 
 // GetTodos fetches all todos
@@ -25,7 +26,7 @@ func GetTodos(c *gin.Context) {
 
 	var todos []models.Todo
 	database.DB.Where("user_id = ?", userID).Find(&todos)
-	
+
 	c.JSON(http.StatusOK, gin.H{"data": todos})
 }
 
@@ -41,20 +42,20 @@ c.JSON(http.StatusCreated, gin.H{"data": todo})：返回 201 状态码和新创�
 **/
 func CreateTodo(c *gin.Context) {
 	userID := middleware.GetUserID(c)
-	
+
 	var input models.Todo
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	todo := models.Todo{
 		Title:       input.Title,
 		Description: input.Description,
 		Completed:   input.Completed,
 		UserID:      userID,
 	}
-	
+
 	database.DB.Create(&todo)
 	c.JSON(http.StatusCreated, gin.H{"data": todo})
 }
@@ -72,14 +73,14 @@ First(&todo)：查找第一个匹配的记录
 **/
 func GetTodo(c *gin.Context) {
 	userID := middleware.GetUserID(c)
-	
+
 	var todo models.Todo
-	
+
 	if err := database.DB.Where("id = ? AND user_id = ?", c.Param("id"), userID).First(&todo).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or not authorized"})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, gin.H{"data": todo})
 }
 
@@ -92,28 +93,68 @@ Model(&todo) 指定要更新的模型
 Updates(...) 使用新数据更新记录
 返回更新后的 Todo
 **/
+
+// UpdateTodoInput 用于接收部分更新（pointer 字段以区分未传入与传入零值）
+type UpdateTodoInput struct {
+	Title       *string `json:"title"`
+	Description *string `json:"description"`
+	Completed   *bool   `json:"completed"`
+}
+
+// UpdateTodo 更新一个 todo（推荐在路由中使用 PATCH）
 func UpdateTodo(c *gin.Context) {
+	// 打印请求头/路由参数以便调试（可选）
+	log.Printf("Headers: %v", c.Request.Header)
+	log.Printf("UpdateTodo called - id=%s, userID=%d", c.Param("id"), middleware.GetUserID(c))
+
 	userID := middleware.GetUserID(c)
-	
+	id := c.Param("id")
+
+	// 1) 查找目标 todo，确认属于当前用户
 	var todo models.Todo
-	
-	if err := database.DB.Where("id = ? AND user_id = ?", c.Param("id"), userID).First(&todo).Error; err != nil {
+	if err := database.DB.Where("id = ? AND user_id = ?", id, userID).First(&todo).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or not authorized"})
 		return
 	}
-	
-	var input models.Todo
+
+	// 2) 绑定输入（指针字段）
+	var input UpdateTodoInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	
-	database.DB.Model(&todo).Updates(models.Todo{
-		Title:       input.Title,
-		Description: input.Description,
-		Completed:   input.Completed,
-	})
-	
+
+	// 3) 根据非 nil 字段构建 updates map（保证 false / 0 / "" 等零值会被更新）
+	updates := map[string]interface{}{}
+	if input.Title != nil {
+		updates["title"] = *input.Title
+	}
+	if input.Description != nil {
+		updates["description"] = *input.Description
+	}
+	if input.Completed != nil {
+		updates["completed"] = *input.Completed
+	}
+
+	// 如果没有字段要更新，返回 400（或可改为 200 并返回当前 todo）
+	if len(updates) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields to update"})
+		return
+	}
+
+	// 4) 执行更新
+	if err := database.DB.Model(&todo).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 5) 重新加载数据库中的最新记录（包含更新时间等）
+	if err := database.DB.First(&todo, todo.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 返回更新后的 todo
 	c.JSON(http.StatusOK, gin.H{"data": todo})
 }
 
@@ -125,16 +166,16 @@ database.DB.Delete(&todo)：从数据库中删除这个 Todo
 **/
 func DeleteTodo(c *gin.Context) {
 	userID := middleware.GetUserID(c)
-	
+
 	var todo models.Todo
-	
+
 	if err := database.DB.Where("id = ? AND user_id = ?", c.Param("id"), userID).First(&todo).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Todo not found or not authorized"})
 		return
 	}
-	
+
 	database.DB.Delete(&todo)
-	
+
 	c.JSON(http.StatusOK, gin.H{"data": "Todo deleted successfully"})
 }
 

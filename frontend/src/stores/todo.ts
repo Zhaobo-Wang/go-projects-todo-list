@@ -71,6 +71,7 @@ export const useTodoStore = defineStore('todo', {
             this.loading = true;
             this.error = null;
             try {
+                console.log('updateTodo', id, updates);
                 const response = await todoApi.update(id, updates);
                 console.log('API 响应:', response);
 
